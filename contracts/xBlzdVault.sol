@@ -91,6 +91,8 @@ contract xBlzdVault is Ownable, Pausable {
     function deposit(uint256 _amount) external whenNotPaused notContract {
         require(_amount > 0, "Nothing to deposit");
 
+        _earn();
+
         uint256 pool = balanceOf();
         token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 currentShares = 0;
@@ -108,8 +110,6 @@ contract xBlzdVault is Ownable, Pausable {
 
         user.xBlzdAtLastUserAction = user.shares.mul(balanceOf()).div(totalShares);
         user.lastUserActionTime = block.timestamp;
-
-        _earn();
 
         emit Deposit(msg.sender, _amount, currentShares, block.timestamp);
     }
