@@ -169,14 +169,6 @@ contract xBlzdVault is Ownable, Pausable {
     }
 
     /**
-     * @notice Withdraws from yetiMaster to Vault without caring about rewards.
-     * @dev EMERGENCY ONLY. Only callable by the contract admin.
-     */
-    function emergencyWithdraw() external onlyAdmin {
-        IYetiMaster(yetiMaster).emergencyWithdraw(pid);
-    }
-
-    /**
      * @notice Withdraw unexpected tokens sent to the xBlzd Vault
      */
     function inCaseTokensGetStuck(address _token) external onlyAdmin {
