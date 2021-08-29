@@ -23,13 +23,13 @@ contract SnowBankVaultXBLZD is IStakingReward, Ownable , ReentrancyGuard {
 
     // team 1.5%
     // each 0.75%
-    address private constant teamYetiA = 0xCe059E8af96a654d4afe630Fa325FBF70043Ab11;
-    address private constant teamYetiB = 0x1EE101AC64BcE7F6DD85C0Ad300C4BBC2cc8272B;
+    address public constant teamYetiA = 0xCe059E8af96a654d4afe630Fa325FBF70043Ab11;
+    address public constant teamYetiB = 0x1EE101AC64BcE7F6DD85C0Ad300C4BBC2cc8272B;
 
     // 3% BUSD
-    address private constant blizzardPool = 0x2Dcf7FB5F83594bBD13C781f5b8b2a9F55a4cdbb;
+    address public constant blizzardPool = 0x2Dcf7FB5F83594bBD13C781f5b8b2a9F55a4cdbb;
 
-    IYetiMaster private constant YETIMASTER = IYetiMaster(0x367CdDA266ADa588d380C7B970244434e4Dde790);
+    IYetiMaster public constant YETIMASTER = IYetiMaster(0x367CdDA266ADa588d380C7B970244434e4Dde790);
     address private constant XBLZD = 0x9a946c3Cb16c08334b69aE249690C236Ebd5583E;
     address private constant BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
@@ -66,7 +66,7 @@ contract SnowBankVaultXBLZD is IStakingReward, Ownable , ReentrancyGuard {
     mapping(address => uint256) private _balances;
 
     bool public emergencyStop;
-    uint256 public pid;
+    uint256 public immutable pid;
 
     uint256 public constant deadline = 2 ** 256 - 1;
 
@@ -137,10 +137,10 @@ contract SnowBankVaultXBLZD is IStakingReward, Ownable , ReentrancyGuard {
          // fee 0.1% go to blizzardPool
         uint256 depositFee = amount.div(1000);
         stakingToken.safeTransfer(blizzardPool, depositFee);
-        uint256 amounAfterFee =  amount.sub(depositFee);
-        _totalSupply = _totalSupply.add(amounAfterFee);
-        _balances[msg.sender] = _balances[msg.sender].add(amounAfterFee);
-        YETIMASTER.deposit(pid, amounAfterFee);
+        uint256 amountAfterFee =  amount.sub(depositFee);
+        _totalSupply = _totalSupply.add(amountAfterFee);
+        _balances[msg.sender] = _balances[msg.sender].add(amountAfterFee);
+        YETIMASTER.deposit(pid, amountAfterFee);
         emit Staked(msg.sender, amount);
     }
 
@@ -278,7 +278,7 @@ contract SnowBankVaultXBLZD is IStakingReward, Ownable , ReentrancyGuard {
               deadline
           );
         }
-        IERC20(WBNB).transfer(msg.sender,
+        IERC20(WBNB).safeTransfer(msg.sender,
             (IERC20(WBNB).balanceOf(address(this))).sub(gasBefore)
         );
 

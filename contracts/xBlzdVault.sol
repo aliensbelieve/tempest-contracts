@@ -16,9 +16,7 @@ contract xBlzdVault is Ownable, Pausable {
 
     struct UserInfo {
         uint256 shares; // number of shares for a user
-        uint256 lastDepositedTime; // keeps track of deposited time for potential penalty
         uint256 xBlzdAtLastUserAction; // keeps track of xBlzd deposited at the last user action
-        uint256 lastUserActionTime; // keeps track of the last user action time
     }
 
     IERC20 public immutable token; // xBlzd token
@@ -31,16 +29,21 @@ contract xBlzdVault is Ownable, Pausable {
     uint256 public totalShares;
     uint256 public lastHarvestedTime;
     address public admin;
-    address public treasury;
+    address public treasury; // bot
 
     uint256 public constant MAX_CALL_FEE = 500; // 5%
     uint256 public callFee = 150; // 1.5%
 
-    event Deposit(address indexed sender, uint256 amount, uint256 shares, uint256 lastDepositedTime);
+    event Deposit(address indexed sender, uint256 amount, uint256 shares);
     event Withdraw(address indexed sender, uint256 amount, uint256 shares);
     event Harvest(address indexed sender, uint256 callFee);
     event Pause();
     event Unpause();
+
+    event AdminSet(address admin);
+    event TreasurySet(address treasury);
+    event CallFeeSet(uint256 callFee);
+    event InCaseTokensGetStuck(address token);
 
     /**
      * @notice Constructor
@@ -91,10 +94,9 @@ contract xBlzdVault is Ownable, Pausable {
     function deposit(uint256 _amount) external whenNotPaused notContract {
         require(_amount > 0, "Nothing to deposit");
 
-        _earn();
-
         uint256 pool = balanceOf();
         token.safeTransferFrom(msg.sender, address(this), _amount);
+
         uint256 currentShares = 0;
         if (totalShares != 0) {
             currentShares = (_amount.mul(totalShares)).div(pool);
@@ -104,14 +106,14 @@ contract xBlzdVault is Ownable, Pausable {
         UserInfo storage user = userInfo[msg.sender];
 
         user.shares = user.shares.add(currentShares);
-        user.lastDepositedTime = block.timestamp;
 
         totalShares = totalShares.add(currentShares);
 
         user.xBlzdAtLastUserAction = user.shares.mul(balanceOf()).div(totalShares);
-        user.lastUserActionTime = block.timestamp;
 
-        emit Deposit(msg.sender, _amount, currentShares, block.timestamp);
+        _earn();
+
+        emit Deposit(msg.sender, _amount, currentShares);
     }
 
     /**
@@ -127,9 +129,9 @@ contract xBlzdVault is Ownable, Pausable {
      */
     function harvest() external notContract whenNotPaused {
         // get reward
+        uint256 balBefore = available();
         IYetiMaster(yetiMaster).withdraw(pid, 0);
-
-        uint256 bal = available();
+        uint256 bal = available().sub(balBefore);
 
         uint256 currentCallFee = bal.mul(callFee).div(10000);
         token.safeTransfer(treasury, currentCallFee);
@@ -148,6 +150,7 @@ contract xBlzdVault is Ownable, Pausable {
     function setAdmin(address _admin) external onlyOwner {
         require(_admin != address(0), "Cannot be zero address");
         admin = _admin;
+        emit AdminSet(_admin);
     }
 
     /**
@@ -157,6 +160,7 @@ contract xBlzdVault is Ownable, Pausable {
     function setTreasury(address _treasury) external onlyOwner {
         require(_treasury != address(0), "Cannot be zero address");
         treasury = _treasury;
+        emit TreasurySet(_treasury);
     }
 
     /**
@@ -166,6 +170,7 @@ contract xBlzdVault is Ownable, Pausable {
     function setCallFee(uint256 _callFee) external onlyAdmin {
         require(_callFee <= MAX_CALL_FEE, "callFee cannot be more than MAX_CALL_FEE");
         callFee = _callFee;
+        emit CallFeeSet(_callFee);
     }
 
     /**
@@ -176,6 +181,7 @@ contract xBlzdVault is Ownable, Pausable {
 
         uint256 amount = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(msg.sender, amount);
+        emit InCaseTokensGetStuck(_token);
     }
 
     /**
@@ -243,11 +249,7 @@ contract xBlzdVault is Ownable, Pausable {
         if (bal < currentAmount) {
             uint256 balWithdraw = currentAmount.sub(bal);
             IYetiMaster(yetiMaster).withdraw(pid, balWithdraw);
-            uint256 balAfter = available();
-            uint256 diff = balAfter.sub(bal);
-            if (diff < balWithdraw) {
-                currentAmount = bal.add(diff);
-            }
+            currentAmount = available();
         }
 
         if (user.shares > 0) {
@@ -255,8 +257,6 @@ contract xBlzdVault is Ownable, Pausable {
         } else {
             user.xBlzdAtLastUserAction = 0;
         }
-
-        user.lastUserActionTime = block.timestamp;
 
         token.safeTransfer(msg.sender, currentAmount);
 

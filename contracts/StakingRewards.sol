@@ -167,6 +167,7 @@ contract StakingRewards is IRewardRate, Ownable , ReentrancyGuard {
 
     function recoverToken(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
         require(_tokenAddress != address(stakingToken), "Cannot recover deposit token");
+        require(_tokenAddress != address(rewardToken), "Cannot recover reward token");
         IERC20(_tokenAddress).safeTransfer(msg.sender, _tokenAmount);
         emit Recovered(_tokenAddress, _tokenAmount);
     }
