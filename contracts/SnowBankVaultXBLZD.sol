@@ -32,7 +32,9 @@ contract SnowBankVaultXBLZD is IStakingReward, Ownable , ReentrancyGuard {
     IYetiMaster private constant YETIMASTER = IYetiMaster(0x367CdDA266ADa588d380C7B970244434e4Dde790);
     address private constant XBLZD = 0x9a946c3Cb16c08334b69aE249690C236Ebd5583E;
     address private constant BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
+    address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address[] public xBLZDToBusdPath = [XBLZD,BUSD];
+    address[] public xBLZDToWbnbPath = [XBLZD,BUSD,WBNB];
     uint256 public slippageFactor = 950;
 
     IPancakeRouter02 public constant ROUTER = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
@@ -265,8 +267,19 @@ contract SnowBankVaultXBLZD is IStakingReward, Ownable , ReentrancyGuard {
         }
 
         // remaining go to bot 1.5%
-        IERC20(XBLZD).transfer(msg.sender,
-            xBLZDAmount.sub(xBLZDForTEMPEST)
+        uint256 gasBefore = IERC20(WBNB).balanceOf(address(this));
+        if(xBLZDAmount.sub(xBLZDForTEMPEST) > 0){
+          _safeSwap(
+              address(ROUTER),
+              xBLZDAmount.sub(xBLZDForTEMPEST),
+              slippageFactor,
+              xBLZDToWbnbPath,
+              address(this),
+              deadline
+          );
+        }
+        IERC20(WBNB).transfer(msg.sender,
+            (IERC20(WBNB).balanceOf(address(this))).sub(gasBefore)
         );
 
         emit Harvested(xBLZDAmount);

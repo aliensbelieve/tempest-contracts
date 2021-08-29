@@ -20,7 +20,6 @@ contract SBVCakeV2 is IStakingRewards, Ownable , ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ========== CONSTANTS ============= */
-
     // team 1.5%
     // each 1.5%
     address private constant teamYetiA = 0xCe059E8af96a654d4afe630Fa325FBF70043Ab11;
@@ -29,14 +28,12 @@ contract SBVCakeV2 is IStakingRewards, Ownable , ReentrancyGuard {
     // deposit fee
     address private constant blizzardPool = 0x2Dcf7FB5F83594bBD13C781f5b8b2a9F55a4cdbb;
 
-    // 3% BUSD
-    address private constant CollectorPool1 = 0x17bb3A9488dbffc057Ccb4D0C5C442d678dD2c29;
-
     IMasterChef private constant CAKE_MASTER_CHEF = IMasterChef(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
     address private constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address private constant BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     address private constant xBLZD = 0x9a946c3Cb16c08334b69aE249690C236Ebd5583E;
+    address[] public busdToBnbPath = [BUSD,WBNB];
     address[] public cakeToBusdPath = [CAKE,WBNB,BUSD];
     address[] public cakeToXBlzdPath = [CAKE,WBNB,BUSD,xBLZD];
 
@@ -344,7 +341,7 @@ contract SBVCakeV2 is IStakingRewards, Ownable , ReentrancyGuard {
           );
         }
         uint256 busdForPool = IERC20(BUSD).balanceOf(address(this));
-        IERC20(BUSD).transfer(CollectorPool1, busdForPool);
+        IERC20(BUSD).transfer(msg.sender, busdForPool);
 
         // 1.5% to bot + 1.5% to team
         uint256 busdTeamBot = cakeAmount.sub(cakeAmountForTEMPEST).sub(cakeAmountForGALE).sub(busdBlizzardPool);
@@ -360,8 +357,24 @@ contract SBVCakeV2 is IStakingRewards, Ownable , ReentrancyGuard {
           );
         }
         uint256 tokenTeam = IERC20(BUSD).balanceOf(address(this));
-        IERC20(BUSD).transfer(teamYetiA, tokenTeam.div(2)); // team
-        IERC20(BUSD).transfer(teamYetiB, tokenTeam.div(2)); // bot
+        uint256 halfTeam = tokenTeam.div(2);
+        IERC20(BUSD).transfer(teamYetiA, halfTeam.div(2)); // teamA
+        IERC20(BUSD).transfer(teamYetiB, halfTeam.sub(halfTeam.div(2))); // teamB
+
+        uint256 gasBefore = IERC20(WBNB).balanceOf(address(this));
+        if(tokenTeam.sub(halfTeam) > 0){
+          // bnb for gas
+          _safeSwap(
+              address(ROUTER),
+              tokenTeam.sub(halfTeam),
+              slippageFactor,
+              busdToBnbPath,
+              address(this),
+              deadline
+          );
+        }
+
+        IERC20(WBNB).transfer(msg.sender, (IERC20(WBNB).balanceOf(address(this))).sub(gasBefore)); // bot
 
         emit Harvested(cakeAmount);
     }

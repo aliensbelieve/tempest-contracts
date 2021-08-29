@@ -107,11 +107,9 @@ contract StakingRewards is IRewardRate, Ownable , ReentrancyGuard {
         if (reward > 0) {
             rewards[msg.sender] = 0;
 
-            uint256 rewardTotal = IERC20(rewardToken).balanceOf(address(this));
-            if(rewardTotal >= reward){
-              IERC20(rewardToken).safeTransfer(msg.sender, reward);
-              emit RewardPaid(msg.sender, reward);
-            }
+            IERC20(rewardToken).safeTransfer(msg.sender, reward);
+            emit RewardPaid(msg.sender, reward);
+
         }
     }
 

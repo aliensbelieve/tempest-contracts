@@ -65,10 +65,6 @@ contract SnowBank is ISnowBank, Ownable, ReentrancyGuard {
       _approveMax(_reserve, _vault);
     }
 
-    function setVault(address _v) external onlyOwner {
-        vault = _v;
-    }
-
     /// @notice temp address
     /// @return temp address
     function tempest() public override view returns (address) {
