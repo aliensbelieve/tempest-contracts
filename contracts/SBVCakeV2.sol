@@ -182,12 +182,10 @@ contract SBVCakeV2 is IStakingRewards, Ownable , ReentrancyGuard {
             if(rewardId  == 0){
                 rewardsToken = IERC20(TEMPEST);
             }
-            else if (rewardId == 1){
+            else {
                 rewardsToken = IERC20(GALE);
             }
-            else{
-                rewardsToken = IERC20(xBLZD);
-            }
+
             rewardsToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward , rewardId);
         }
