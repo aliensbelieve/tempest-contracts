@@ -339,10 +339,11 @@ contract SBVCakeV2 is IStakingRewards, Ownable , ReentrancyGuard {
           );
         }
         uint256 busdForPool = IERC20(BUSD).balanceOf(address(this));
-        IERC20(BUSD).safeTransfer(msg.sender, busdForPool);
+        IERC20(BUSD).safeTransfer(blizzardPool, busdForPool);
 
         // 1.5% to bot + 1.5% to team
         uint256 busdTeamBot = cakeAmount.sub(cakeAmountForTEMPEST).sub(cakeAmountForGALE).sub(busdBlizzardPool);
+        uint256 beforeTeamBot = IERC20(BUSD).balanceOf(address(this));
         if(busdTeamBot > 0){
           // for BUSD
           _safeSwap(
@@ -355,7 +356,7 @@ contract SBVCakeV2 is IStakingRewards, Ownable , ReentrancyGuard {
           );
         }
 
-        uint256 tokenTeam = IERC20(BUSD).balanceOf(address(this));
+        uint256 tokenTeam = (IERC20(BUSD).balanceOf(address(this))).sub(beforeTeamBot);
         uint256 halfTeam = tokenTeam.div(2);
         IERC20(BUSD).safeTransfer(teamYetiA, halfTeam.div(2)); // teamA
         IERC20(BUSD).safeTransfer(teamYetiB, halfTeam.sub(halfTeam.div(2))); // teamB
