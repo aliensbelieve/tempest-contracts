@@ -43,7 +43,7 @@ contract xBlzdVault is Ownable, Pausable {
     event AdminSet(address admin);
     event TreasurySet(address treasury);
     event CallFeeSet(uint256 callFee);
-    event InCaseTokensGetStuck(address token);
+    event InCaseTokensGetStuck(address token, uint256 amount);
 
     /**
      * @notice Constructor
@@ -186,7 +186,7 @@ contract xBlzdVault is Ownable, Pausable {
 
         uint256 amount = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(msg.sender, amount);
-        emit InCaseTokensGetStuck(_token);
+        emit InCaseTokensGetStuck(_token, amount);
     }
 
     /**
