@@ -212,7 +212,7 @@ contract xBlzdVault is Ownable, Pausable {
      * @return Expected reward to collect in xBlzd
      */
     function calculateHarvestXBlzdRewards() external view returns (uint256) {
-        uint256 amount = IYetiMaster(yetiMaster).pendingxBLZD(0, address(this));
+        uint256 amount = IYetiMaster(yetiMaster).pendingxBLZD(pid, address(this));
         amount = amount.add(available());
         uint256 currentCallFee = amount.mul(callFee).div(10000);
 
@@ -224,7 +224,7 @@ contract xBlzdVault is Ownable, Pausable {
      * @return Returns total pending xBlzd rewards
      */
     function calculateTotalPendingXBlzdRewards() external view returns (uint256) {
-        uint256 amount = IYetiMaster(yetiMaster).pendingxBLZD(0, address(this));
+        uint256 amount = IYetiMaster(yetiMaster).pendingxBLZD(pid, address(this));
         amount = amount.add(available());
 
         return amount;
@@ -254,7 +254,11 @@ contract xBlzdVault is Ownable, Pausable {
         if (bal < currentAmount) {
             uint256 balWithdraw = currentAmount.sub(bal);
             IYetiMaster(yetiMaster).withdraw(pid, balWithdraw);
-            currentAmount = available();
+            uint256 balAfter = available();
+            uint256 diff = balAfter.sub(bal);
+            if (diff < balWithdraw) {
+              currentAmount = bal.add(diff);
+            }
         }
 
         if (user.shares > 0) {
